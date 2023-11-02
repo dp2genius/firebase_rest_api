@@ -10,7 +10,6 @@
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-const {onRequest} = require("firebase-functions/v2/https");
 const {PassThrough} = require("stream");
 const {Storage} = require("@google-cloud/storage");
 const functions = require('firebase-functions');
