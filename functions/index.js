@@ -10,12 +10,15 @@
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-const {onRequest} = require("firebase-functions/v2/https");
-const {Storage} = require("@google-cloud/storage");
-const logger = require("firebase-functions/logger");
-const archiver = require("archiver");
-// const cors = require("cors");
+const {onRequest}   = require("firebase-functions/v2/https");
 const {PassThrough} = require("stream");
+const {Storage}     = require("@google-cloud/storage");
+
+const archiver = require("archiver");
+const admin    = require("firebase-admin");
+const logger   = require("firebase-functions/logger");
+
+const serviceAccount = require("./config/vehiclehubdev-firebase-adminsdk.json");
 
 // env
 const ProjectId = "vehiclehubdev";
@@ -24,24 +27,36 @@ const BUCKET_NAME = "vehiclehubdev.appspot.com";
 // storage/bucket
 const storage = new Storage({
   projectId: ProjectId,
+  keyFilename: "./config/vehiclehubdev-firebase-adminsdk.json",
 });
 
 const bucket = storage.bucket(BUCKET_NAME);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 /**
  * @method GET
  * @desc Zip file download endpoint
  */
-exports.download = onRequest(async (request, response) => {
+exports.download = onRequest(async (request, response) => {  
+  /** response data */
+  const res = {
+    success: false,
+    signedUrl: null,
+    errors: [],
+  };
   let files = request.query.files;
-  const destFilename =
-    `Download-${Date.now()}-${Math.floor(Math.random() * 1E5)}.zip`;
+  const destFilename = `Download-${Date.now()}-${Math.floor(Math.random() * 1E5)}.zip`;
 
   // parse `files`
   try {
     files = JSON.parse(files);
   } catch (err) {
-    return response.status(400).end("missing files param");
+    res.success = false;
+    res.errors.push("missing files param");
+    return response.status(400).json(res);
   }
 
   // ReadStreams => Archiver =>
@@ -75,6 +90,8 @@ exports.download = onRequest(async (request, response) => {
       archive.append(file.createReadStream(), {name: filename});
     } else {
       logger.error(`Requested file ${filename} does not exists.`);
+
+      res.errors.push(`Requested file ${filename} does not exists.`);
     }
   }));
 
@@ -84,22 +101,33 @@ exports.download = onRequest(async (request, response) => {
   // Start downloading
 
   writeStream.on("finish", () => {
-    response.setHeader(
-        "Content-Disposition",
-        `attachment; filename*=utf-8''${encodeURIComponent(destFilename)}`,
-    );
-    const readStream = zipFile.createReadStream();
+    // Return url to download
 
-    readStream.on("error", () => {
-      logger.error("Error happend while reading.");
-      response.status(500).end();
+    const config = {
+      action: "read",
+      expires: Date.now() + 1000 * 60 * 60, // 1 hour available
+    };
+
+    zipFile.getSignedUrl(config, (err, url) => {
+      if (err) {
+        logger.error(err);
+
+        res.success = false;
+        res.errors.push("Cannot get signed url of zip file");
+        response.status(500).json(res);
+      } else {
+        res.success = true;
+        res.signedUrl = url;
+        response.status(200).json(res);
+      }
     });
-
-    readStream.pipe(response);
   });
 
   writeStream.on("error", () => {
     logger.error("Error happened while writing.");
-    response.status(500).end();
+
+    res.success = false;
+    res.errors.push("Error happened while writing.");
+    response.status(500).json(res);
   });
 });

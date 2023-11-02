@@ -7,9 +7,6 @@ yarn-error.log*
 firebase-debug.log*
 firebase-debug.*.log*
 
-# npm
-package-lock.json
-
 # Firebase cache
 .firebase/
 
@@ -66,4 +63,4 @@ node_modules/
 .yarn-integrity
 
 # dotenv environment variables file
-# .env
+.env
