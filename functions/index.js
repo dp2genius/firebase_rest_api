@@ -17,31 +17,36 @@ const archiver = require('archiver');
 // const cors = require("cors");
 const {PassThrough} = require('stream');
 
+// env
 const ProjectId = "vehiclehubdev";
 const BUCKET_NAME = "vehiclehubdev.appspot.com";
 
+// storage/bucket
 const storage = new Storage({
   projectId: ProjectId,
 });
 
-// dev
 const bucket = storage.bucket(BUCKET_NAME);
-console.log(bucket.getFiles().then(console.log));
 
+/**
+ * @method GET
+ * @desc Zip file download endpoint
+ */
+exports.download = onRequest(async (request, response) => {
+  let files = request.query.files;
+  const destFilename = `Download-${Date.now()}-${Math.floor(Math.random() * 1E5)}.zip`;
 
-exports.helloWorld = onRequest(async (request, response) => {
-  logger.info("Hello logs!", {structuredData: true});
-  console.log(request.body, request.query);
+  // parse `files`
+  try {
+    files = JSON.parse(files);
+  } catch(err) {
+    return response.status(400).end("missing files param");
+  }
 
-  const files = ["avatar.jpg", "folder1/avatar.png"];
-  // const files = ["avatar.png"];
-  const destFilename = "my_archive.zip";
-
-  //
-
-  const bucket = storage.bucket(BUCKET_NAME);
+  // ReadStreams => Archiver => PassThrough(uploadstream) => WriteStream(zipFile)
 
   // Where the zip file will be uploaded in firebase storage
+  /** Destination zip file */
   const zipFile = bucket.file(destFilename);
   const writeStream = zipFile.createWriteStream();
 
@@ -58,32 +63,40 @@ exports.helloWorld = onRequest(async (request, response) => {
 
   archive.pipe(uploadStream);
 
-  files.forEach((filename) => {
+  await Promise.all(files.map(async (filename) => {
     const file = bucket.file(filename);
-    archive.append(file.createReadStream(), { name: filename });
-  });
+
+    // Filter files that are not exists.
+    const exists = await file.exists().then(res => res[0]);
+
+    if (exists) {
+      archive.append(file.createReadStream(), { name: filename });
+    } else {
+      logger.error(`Requested file ${filename} does not exists.`);
+    }
+  }));
 
   archive.finalize();
 
-  writeStream.on("finish", () => {
-    // Start downloading
+  // End archiving (piping streams, not real writing)
+  // Start downloading
 
-    response.setHeader("Content-Disposition", `attachment; filename*=utf-8''${encodeURIComponent(fileName)}`);
-    const readStream = file.createReadStream();
+  writeStream.on("finish", () => {
+
+    response.setHeader("Content-Disposition", `attachment; filename*=utf-8''${encodeURIComponent(destFilename)}`);
+    const readStream = zipFile.createReadStream();
 
     readStream.on("error", (err) => {
-      console.error(err);
+      logger.error("Error happend while reading.");
       response.status(500).end();
     });
 
     readStream.pipe(response);
   });
 
+  writeStream.on("error", (err) => {
+    logger.error("Error happened while writing.");
+    response.status(500).end();
+  });
+
 });
-
-// exports.downloadZip = onRequest((request, response) => {
-//   const bucket = storage.bucket(BUCKET_NAME);
-
-//   const fileName = 'my_archive.zip';
-//   const file = bucket.file(fileName);
-// });
