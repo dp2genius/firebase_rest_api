@@ -12,8 +12,8 @@
 
 const {PassThrough} = require("stream");
 const {Storage} = require("@google-cloud/storage");
-const functions = require('firebase-functions');
-const cors = require('cors')({origin: true});
+const functions = require("firebase-functions");
+const cors = require("cors")({origin: true});
 
 const archiver = require("archiver");
 const admin = require("firebase-admin");
@@ -58,9 +58,9 @@ exports.download = functions.https.onRequest((request, response) => cors(request
   }
 
   try {
-    let decodedToken = await admin.auth().verifyIdToken(tokenId.split("Bearer ")[0]);
+    const decodedToken = await admin.auth().verifyIdToken(tokenId.split("Bearer ")[0]);
     logger.log(decodedToken);
-  } catch(err) {
+  } catch (err) {
     res.success = false;
     res.errors.push("Token is malformed");
     return response.status(400).json(res);
