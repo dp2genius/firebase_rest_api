@@ -13,9 +13,9 @@
 const {onRequest} = require("firebase-functions/v2/https");
 const {Storage} = require("@google-cloud/storage");
 const logger = require("firebase-functions/logger");
-const archiver = require('archiver');
+const archiver = require("archiver");
 // const cors = require("cors");
-const {PassThrough} = require('stream');
+const {PassThrough} = require("stream");
 
 // env
 const ProjectId = "vehiclehubdev";
@@ -34,16 +34,18 @@ const bucket = storage.bucket(BUCKET_NAME);
  */
 exports.download = onRequest(async (request, response) => {
   let files = request.query.files;
-  const destFilename = `Download-${Date.now()}-${Math.floor(Math.random() * 1E5)}.zip`;
+  const destFilename =
+    `Download-${Date.now()}-${Math.floor(Math.random() * 1E5)}.zip`;
 
   // parse `files`
   try {
     files = JSON.parse(files);
-  } catch(err) {
+  } catch (err) {
     return response.status(400).end("missing files param");
   }
 
-  // ReadStreams => Archiver => PassThrough(uploadstream) => WriteStream(zipFile)
+  // ReadStreams => Archiver =>
+  // => PassThrough(uploadstream) => WriteStream(zipFile)
 
   // Where the zip file will be uploaded in firebase storage
   /** Destination zip file */
@@ -58,7 +60,7 @@ exports.download = onRequest(async (request, response) => {
 
   // Initialize the archiver
   const archive = archiver("zip", {
-    zlib: { level: 9 } // Sets the compression level.
+    zlib: {level: 9}, // Sets the compression level.
   });
 
   archive.pipe(uploadStream);
@@ -67,10 +69,10 @@ exports.download = onRequest(async (request, response) => {
     const file = bucket.file(filename);
 
     // Filter files that are not exists.
-    const exists = await file.exists().then(res => res[0]);
+    const exists = await file.exists().then((res) => res[0]);
 
     if (exists) {
-      archive.append(file.createReadStream(), { name: filename });
+      archive.append(file.createReadStream(), {name: filename});
     } else {
       logger.error(`Requested file ${filename} does not exists.`);
     }
@@ -82,11 +84,13 @@ exports.download = onRequest(async (request, response) => {
   // Start downloading
 
   writeStream.on("finish", () => {
-
-    response.setHeader("Content-Disposition", `attachment; filename*=utf-8''${encodeURIComponent(destFilename)}`);
+    response.setHeader(
+        "Content-Disposition",
+        `attachment; filename*=utf-8''${encodeURIComponent(destFilename)}`,
+    );
     const readStream = zipFile.createReadStream();
 
-    readStream.on("error", (err) => {
+    readStream.on("error", () => {
       logger.error("Error happend while reading.");
       response.status(500).end();
     });
@@ -94,9 +98,8 @@ exports.download = onRequest(async (request, response) => {
     readStream.pipe(response);
   });
 
-  writeStream.on("error", (err) => {
+  writeStream.on("error", () => {
     logger.error("Error happened while writing.");
     response.status(500).end();
   });
-
 });

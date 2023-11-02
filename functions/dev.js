@@ -11,20 +11,20 @@ const storage = new Storage({
 });
 
 module.exports = () => {
-    const bucket = storage.bucket(BUCKET_NAME);
-    bucket.upload(
-        "D:/my_avatar.png",
-        {
-            destination: "folder1/avatar.png"
-        },
-        (err, file) => {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log("Success");
-            }
+  const bucket = storage.bucket(BUCKET_NAME);
+  bucket.upload(
+      "D:/my_avatar.png",
+      {
+        destination: "folder1/avatar.png",
+      },
+      (err, file) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log("Success");
         }
-    );
+      },
+  );
 
-    process.stdin.resume();
+  process.stdin.resume();
 };
