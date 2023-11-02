@@ -13,6 +13,8 @@
 const {onRequest} = require("firebase-functions/v2/https");
 const {PassThrough} = require("stream");
 const {Storage} = require("@google-cloud/storage");
+const functions = require('firebase-functions');
+const cors = require('cors')({origin: true});
 
 const archiver = require("archiver");
 const admin = require("firebase-admin");
@@ -40,7 +42,7 @@ admin.initializeApp({
  * @method GET
  * @desc Zip file download endpoint
  */
-exports.download = onRequest(async (request, response) => {
+exports.download = functions.https.onRequest((request, response) => cors(request, response, async () => {
   /** response data */
   const res = {
     success: false,
@@ -147,4 +149,4 @@ exports.download = onRequest(async (request, response) => {
     res.errors.push("Error happened while writing.");
     response.status(500).json(res);
   });
-});
+}));
