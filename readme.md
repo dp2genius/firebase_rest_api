@@ -50,8 +50,8 @@ https://console.firebase.google.com/project/vehiclehubdev/overview
 Response:
 ```json
 {
-    "success": true | false,
-    "signedUrl": null | "string",
+    "success": true,
+    "signedUrl": "https://",
     "errors": [
         "error_1",
         "error_2",
