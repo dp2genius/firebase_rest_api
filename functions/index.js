@@ -10,13 +10,13 @@
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
-const {onRequest}   = require("firebase-functions/v2/https");
+const {onRequest} = require("firebase-functions/v2/https");
 const {PassThrough} = require("stream");
-const {Storage}     = require("@google-cloud/storage");
+const {Storage} = require("@google-cloud/storage");
 
 const archiver = require("archiver");
-const admin    = require("firebase-admin");
-const logger   = require("firebase-functions/logger");
+const admin = require("firebase-admin");
+const logger = require("firebase-functions/logger");
 
 const config = require("./config/config");
 const serviceAccount = require("./config/vehiclehubdev-firebase-adminsdk.json");
@@ -40,7 +40,7 @@ admin.initializeApp({
  * @method GET
  * @desc Zip file download endpoint
  */
-exports.download = onRequest(async (request, response) => {  
+exports.download = onRequest(async (request, response) => {
   /** response data */
   const res = {
     success: false,
