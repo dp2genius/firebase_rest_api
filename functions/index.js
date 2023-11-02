@@ -18,11 +18,11 @@ const archiver = require("archiver");
 const admin    = require("firebase-admin");
 const logger   = require("firebase-functions/logger");
 
+const config = require("./config/config");
 const serviceAccount = require("./config/vehiclehubdev-firebase-adminsdk.json");
 
-// env
-const ProjectId = "vehiclehubdev";
-const BUCKET_NAME = "vehiclehubdev.appspot.com";
+const ProjectId = config.ProjectId;
+const BUCKET_NAME = config.BUCKET_NAME;
 
 // storage/bucket
 const storage = new Storage({
@@ -59,8 +59,7 @@ exports.download = onRequest(async (request, response) => {
     return response.status(400).json(res);
   }
 
-  // ReadStreams => Archiver =>
-  // => PassThrough(uploadstream) => WriteStream(zipFile)
+  // ReadStreams => Archiver => PassThrough(uploadstream) => WriteStream(zipFile)
 
   // Where the zip file will be uploaded in firebase storage
   /** Destination zip file */
