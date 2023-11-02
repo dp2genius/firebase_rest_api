@@ -47,6 +47,24 @@ exports.download = onRequest(async (request, response) => {
     signedUrl: null,
     errors: [],
   };
+
+  // Authentication
+  const tokenId = request.headers.authorization;
+  if (tokenId === undefined) {
+    res.success = false;
+    res.errors.push("User unauthorized");
+    return response.status(401).json(res);
+  }
+
+  try {
+    let decodedToken = await admin.auth().verifyIdToken(tokenId.split("Bearer ")[0]);
+    logger.log(decodedToken);
+  } catch(err) {
+    res.success = false;
+    res.errors.push("Token is malformed");
+    return response.status(400).json(res);
+  }
+
   let files = request.query.files;
   const destFilename = `Download-${Date.now()}-${Math.floor(Math.random() * 1E5)}.zip`;
 
